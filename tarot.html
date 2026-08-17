@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Tarot - Past, Present, Future</title>
+    
+    <!-- Drag and Drop Polyfill for Mobile Touch Screens -->
+    <script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0a0202;
+            color: #ff4d4d;
+            font-family: 'Cinzel', serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at center, #2a0505 0%, #0a0202 80%);
+        }
+
+        h1 {
+            margin-top: 2rem;
+            font-size: 2.5rem;
+            color: #ff1a1a;
+            text-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .subtitle {
+            font-family: 'Lora', serif;
+            color: #cc8888;
+            font-style: italic;
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 0 15px;
+        }
+
+        /* --- Arched Deck Container --- */
+        .tarot-table {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            height: 350px;
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow: visible;
+        }
+
+        .tarot-card-back {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            width: 70px;
+            height: 120px;
+            background: repeating-linear-gradient(45deg, #3a0000, #3a0000 10px, #1a0000 10px, #1a0000 20px);
+            border: 1px solid #8b0000;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.9);
+            transform-origin: 50% 400px;
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.3s ease, opacity 0.3s;
+            cursor: grab;
+            touch-action: none; /* Crucial for mobile drag and drop */
+            user-select: none;
+        }
+
+        .tarot-card-back:active {
+            cursor: grabbing;
+        }
+
+        .tarot-card-back:hover {
+            border-color: #ff4d4d;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            z-index: 200 !important;
+        }
+
+        /* --- 3-Card Slots Area --- */
+        .spread-area {
+            display: flex;
+            gap: 2rem;
+            margin-top: -2rem;
+            margin-bottom: 3rem;
+            z-index: 10;
+        }
+
+        .slot-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .slot-label {
+            font-size: 1.2rem;
+            color: #ff4d4d;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .card-slot {
+            width: 110px;
+            height: 180px;
+            border: 2px dashed #8b0000;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(20, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .card-slot.drag-over {
+            background: rgba(255, 77, 77, 0.2);
+            border-color: #ff4d4d;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        /* Filled slot styling */
+        .filled-card {
+            width: 100%;
+            height: 100%;
+            background: #110000;
+            border: 2px solid #ff1a1a;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+            animation: dropIn 0.5s ease forwards;
+        }
+
+        @keyframes dropIn {
+            0% { transform: scale(1.2); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .filled-card.is-reversed .card-icon {
+            transform: rotate(180deg);
+        }
+
+        .card-icon {
+            font-size: 1.8rem;
+            color: #8b0000;
+            margin-bottom: 5px;
+        }
+
+        .mini-title {
+            font-size: 0.75rem;
+            color: #fff;
+            line-height: 1.2;
+            margin-bottom: 5px;
+        }
+
+        .mini-orientation {
+            font-size: 0.6rem;
+            color: #ff4d4d;
+            text-transform: uppercase;
+        }
+
+        /* --- Reading Text Area --- */
+        .reading-container {
+            display: none;
+            width: 95%;
+            max-width: 800px;
+            margin-bottom: 4rem;
+            background: rgba(15, 0, 0, 0.8);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+            animation: fadeIn 1s forwards;
+        }
+
+        .reading-container p {
+            font-family: 'Lora', serif;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #e6e6e6;
+            margin-bottom: 1.2rem;
+        }
+
+        .reading-container h3 {
+            font-family: 'Cinzel', serif;
+            color: #ff1a1a;
+            font-size: 1.3rem;
+            margin-top: 2rem;
+            margin-bottom: 0.8rem;
+            border-bottom: 1px solid #8b0000;
+            padding-bottom: 5px;
+            display: inline-block;
+        }
+
+        .story-section {
+            background: rgba(255, 0, 0, 0.05);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #ff1a1a;
+            margin-top: 2rem;
+        }
+
+        .reset-btn {
+            display: block;
+            margin: 2.5rem auto 0 auto;
+            padding: 12px 30px;
+            background: transparent;
+            color: #ff4d4d;
+            border: 1px solid #ff4d4d;
+            border-radius: 4px;
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: #ff4d4d;
+            color: #000;
+            box-shadow: 0 0 15px rgba(255, 77, 77, 0.6);
+        }
+
+        .loading-text {
+            color: #ff4d4d;
+            font-size: 1.2rem;
+            text-align: center;
+            animation: pulse 1.5s infinite;
+            margin-top: 2rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            .spread-area { gap: 0.5rem; }
+            .card-slot {
+                width: 90px;
+                height: 145px;
+            }
+            .tarot-table { height: 280px; }
+            .tarot-card-back { transform-origin: 50% 300px; }
+            .reading-container { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>The Threads of Fate</h1>
+    <div class="subtitle">Drag three cards to the table to reveal your story.</div>
+
+    <div class="tarot-table" id="deck-container"></div>
+
+    <div class="spread-area">
+        <div class="slot-container">
+            <div class="slot-label">Past</div>
+            <div class="card-slot" id="slot-past" data-slot="0"></div>
+        </div>
+        <div class="slot-container">
+            <div class="slot-label">Present</div>
+            <div class="card-slot" id="slot-present" data-slot="1"></div>
+        </div>
+        <div class="slot-container">
+            <div class="slot-label">Future</div>
+            <div class="card-slot" id="slot-future" data-slot="2"></div>
+        </div>
+    </div>
+
+    <div id="loading-state" class="loading-text" style="display: none;">
+        Gathering the threads...
+    </div>
+
+    <div class="reading-container" id="reading-container"></div>
+
+    <script>
+        const TOTAL_CARDS = 78;
+        const deckContainer = document.getElementById('deck-container');
+        const slots = document.querySelectorAll('.card-slot');
+        let draggedCard = null;
+        
+        let readingData = [];
+        let filledSlots = 0;
+
+        // Force API names into standard Rider-Waite-Smith names
+        function normalizeRWSName(apiName) {
+            // Replace historical anomalies in the Major Arcana
+            const majorArcanaCorrections = {
+                "Fortitude": "Strength",
+                "The Magus": "The Magician",
+                "The Papess": "The High Priestess",
+                "The Pope": "The Hierophant",
+                "The House of God": "The Tower"
+            };
+            
+            let correctedName = majorArcanaCorrections[apiName] || apiName;
+            
+            // Standardize Minor Arcana suits (e.g., "Coins" -> "Pentacles")
+            correctedName = correctedName.replace(/Coins|Disks|Deniers/g, "Pentacles");
+            correctedName = correctedName.replace(/Batons|Staves|Clubs/g, "Wands");
+            correctedName = correctedName.replace(/Chalices/g, "Cups");
+
+            return correctedName;
+        }
+
+        async function fetchTarotCards() {
+            try {
+                const response = await fetch('https://tarotapi.dev/api/v1/cards/random?n=3');
+                const data = await response.json();
+                readingData = data.cards.map(card => {
+                    return {
+                        ...card,
+                        name: normalizeRWSName(card.name), // Apply the RWS name correction here
+                        isReversed: Math.random() > 0.5 
+                    };
+                });
+            } catch (err) {
+                console.error("Error fetching cards", err);
+            }
+        }
+
+        function generateDeck() {
+            deckContainer.innerHTML = '';
+            filledSlots = 0;
+            readingData = [];
+            document.getElementById('reading-container').style.display = 'none';
+            document.getElementById('reading-container').innerHTML = '';
+            
+            fetchTarotCards();
+
+            const spreadAngle = 110; 
+            const startAngle = -(spreadAngle / 2);
+            const angleStep = spreadAngle / (TOTAL_CARDS - 1);
+
+            for (let i = 0; i < TOTAL_CARDS; i++) {
+                const card = document.createElement('div');
+                card.classList.add('tarot-card-back');
+                card.draggable = true;
+                
+                const currentAngle = startAngle + (i * angleStep);
+                card.style.transform = `translateX(-50%) rotate(${currentAngle}deg)`;
+                card.style.zIndex = i;
+
+                card.addEventListener('dragstart', (e) => {
+                    draggedCard = card;
+                    setTimeout(() => card.style.opacity = '0', 0);
+                });
+
+                card.addEventListener('dragend', () => {
+                    if (draggedCard) draggedCard.style.opacity = '1';
+                    draggedCard = null;
+                });
+
+                deckContainer.appendChild(card);
+            }
+
+            slots.forEach(slot => {
+                slot.innerHTML = '';
+                slot.style.borderStyle = 'dashed';
+            });
+        }
+
+        slots.forEach(slot => {
+            slot.addEventListener('dragover', (e) => {
+                e.preventDefault(); 
+                if (!slot.hasChildNodes()) slot.classList.add('drag-over');
+            });
+
+            slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+
+                if (slot.hasChildNodes() || !draggedCard || readingData.length === 0) return;
+
+                draggedCard.remove();
+                draggedCard = null;
+
+                const slotIndex = parseInt(slot.getAttribute('data-slot'));
+                const cardData = readingData[slotIndex];
+
+                const filledVisual = document.createElement('div');
+                filledVisual.className = `filled-card ${cardData.isReversed ? 'is-reversed' : ''}`;
+                
+                filledVisual.innerHTML = `
+                    <div class="card-icon">✧</div>
+                    <div class="mini-title">${cardData.name}</div>
+                    <div class="mini-orientation">${cardData.isReversed ? 'Reversed' : 'Upright'}</div>
+                `;
+                
+                slot.style.borderStyle = 'solid';
+                slot.appendChild(filledVisual);
+
+                filledSlots++;
+                if (filledSlots === 3) generateFortuneReading();
+            });
+        });
+
+        // Helper to extract a clean string of keywords
+        function getSimpleKeywords(rawString) {
+            let words = rawString.split(',').map(w => w.trim().toLowerCase());
+            words = words.filter(w => w.length > 2 && !w.includes("dignified"));
+            return words.slice(0, 3).join(", ");
+        }
+
+        // Helper to get just the primary dominant keyword for weaving sentences together
+        function getPrimaryTheme(rawString) {
+            let words = rawString.split(',').map(w => w.trim().toLowerCase());
+            words = words.filter(w => w.length > 2 && !w.includes("dignified"));
+            return words[0] || "shifting energies";
+        }
+
+        function generateFortuneReading() {
+            const readingDiv = document.getElementById('reading-container');
+            
+            const past = readingData[0];
+            const present = readingData[1];
+            const future = readingData[2];
+
+            const pastWords = getSimpleKeywords(past.isReversed ? past.meaning_rev : past.meaning_up);
+            const presentWords = getSimpleKeywords(present.isReversed ? present.meaning_rev : present.meaning_up);
+            const futureWords = getSimpleKeywords(future.isReversed ? future.meaning_rev : future.meaning_up);
+
+            const pastTheme = getPrimaryTheme(past.isReversed ? past.meaning_rev : past.meaning_up);
+            const presentTheme = getPrimaryTheme(present.isReversed ? present.meaning_rev : present.meaning_up);
+            const futureTheme = getPrimaryTheme(future.isReversed ? future.meaning_rev : future.meaning_up);
+
+            // Dynamic Fortune Teller Narrative
+            const htmlContent = `
+                <p><em>"Come in. The cards have been drawn, and they have quite a story to tell about where you've been, and where you're going..."</em></p>
+
+                <h3>The Roots: Your Past</h3>
+                <p>In the Past position, we see <strong>${past.name}</strong> (${past.isReversed ? 'Reversed' : 'Upright'}). Looking backward, your life was recently deeply shaped by <em>${pastWords}</em>.</p>
+                <p>${past.isReversed ? `Because this card fell in reverse, this phase likely felt blocked or internal. You had to struggle against the natural flow of these energies.` : `This was an active, outward energy that set the foundation for your life right now.`} 
+                More importantly, the way you handled this period of <strong>${pastTheme}</strong> is the exact reason you find yourself in your current situation today. It closed one door, but pushed you right into the room you are standing in now.</p>
+
+                <h3>The Anchor: Your Present</h3>
+                <p>For the Present moment, the void has handed you <strong>${present.name}</strong> (${present.isReversed ? 'Reversed' : 'Upright'}). This is the pivot point of your story.</p>
+                <p>Because you moved through that past phase of ${pastTheme}, you are now dealing directly with <em>${presentWords}</em>. 
+                ${present.isReversed ? `Currently, you might be resisting this reality. You are being asked to look inward and figure out why you are holding back from fully experiencing it.` : `You are currently right in the thick of this. The cards want you to embrace it fully, as this is the raw material you are working with right this second.`}
+                Pay close attention: the universe has placed <strong>${presentTheme}</strong> in your lap right now because you are going to need those skills to handle what comes next.</p>
+
+                <h3>The Horizon: Your Future</h3>
+                <p>Finally, we cast our gaze forward. Your Future card is <strong>${future.name}</strong> (${future.isReversed ? 'Reversed' : 'Upright'}).</p>
+                <p>If you successfully navigate your current situation with the ${present.name}, the tension will break, transforming directly into a period defined by <em>${futureWords}</em>. 
+                ${future.isReversed ? `Be careful, though—the reversed position acts as a gentle warning. You may face some internal hurdles before you can fully grasp what is coming.` : `This is a strong, outward manifestation. The universe is aligning to bring these experiences directly into your waking life very soon.`}</p>
+
+                <div class="story-section">
+                    <h3>The Big Picture</h3>
+                    <p>"Let me tie this all together for you. The thread of fate here is undeniable.</p>
+                    <p>You survived the trials of <em>${pastTheme}</em>, which directly birthed your current focus on <em>${presentTheme}</em>. Do not run from what you are feeling right now. The cards are showing that mastering your present situation is the only key that will unlock the era of <em>${futureTheme}</em> waiting for you tomorrow. You are exactly where you need to be."</p>
+                </div>
+
+                <button class="reset-btn" onclick="generateDeck()">Clear the Table & Draw Again</button>
+            `;
+
+            readingDiv.innerHTML = htmlContent;
+            readingDiv.style.display = 'block';
+
+            setTimeout(() => {
+                readingDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
+        }
+
+        generateDeck();
+
+    </script>
+</body>
+</html>
